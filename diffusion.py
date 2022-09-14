@@ -28,7 +28,7 @@ class DiffusionRunner:
 
         self.model = create_model(config=config)
         self.sde = create_dyn(config=config)
-        self.diff_eq_solver = create_sampler(config, self.sde)
+        self.sampler = create_sampler(config, self.sde)
         self.inverse_scaler = lambda x: torch.clip(127.5 * (x + 1), 0, 255)
 
         self.checkpoints_folder = config.training.checkpoints_folder
@@ -74,7 +74,7 @@ class DiffusionRunner:
         self.optimizer = optimizer
 
     def sample_time(self, batch_size: int, eps: float = 1e-5):
-        return torch.rand(batch_size) * (self.sde.T - eps) + eps
+        return torch.randint(high=self.sde.N, size=(batch_size,)).long()
 
     def calc_loss(self, clean_x: torch.Tensor, eps: float = 1e-5) -> Dict[str, torch.Tensor]:
         batch_size = clean_x.size(0)
@@ -161,7 +161,7 @@ class DiffusionRunner:
     def train(
             self,
             project_name: str = 'upsampling_sde',
-            experiment_name: str = 'vp-sde'
+            experiment_name: str = 'ho-improved'
         ) -> None:
         if torch.cuda.device_count() > 1:
             self.model = torch.nn.DataParallel(self.model)
@@ -214,7 +214,7 @@ class DiffusionRunner:
             prefix = prefix + 'last_'
         else:
             prefix = prefix + str(self.step) + '_'
-        if True:
+        if self.step + 10 >= 300_000 and True:
             torch.save(self.model.state_dict(), os.path.join(self.checkpoints_folder,
                                                                    prefix + f'model.pth'))
             torch.save(self.ema.state_dict(), os.path.join(self.checkpoints_folder,
@@ -236,16 +236,14 @@ class DiffusionRunner:
         device = torch.device(self.config.device)
         with torch.no_grad():
             x = x_mean = self.sde.prior_sampling(shape).to(device)
-            timesteps = torch.arange(self.sde.N, 0, -1, device=device).float() / self.sde.N
+            timesteps = torch.arange(self.sde.N - 1, -1, -1, device=device).long()
             rang = trange if verbose else range
             
-            for idx in rang(self.sde.N - 1):
+            for idx in rang(self.sde.N):
                 t = timesteps[idx]
-                input_t = t * torch.ones(shape[0], device=device)
-                new_state = self.diff_eq_solver.step(self.model, x, input_t)
+                input_t = t * torch.ones(shape[0], device=device).long()
+                new_state = self.sampler.step(self.model, x, input_t)
                 x, x_mean = new_state['x'], new_state['x_mean']
-            
-            x_mean = self.sde.predict_x0(x, timesteps[-1] * torch.ones(shape[0], device=device), model=self.model)
 
         return x_mean
 

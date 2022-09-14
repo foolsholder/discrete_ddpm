@@ -42,24 +42,21 @@ def create_default_cifar_config(resolution: int = 32):
 
     # training
     training = config.training = ml_collections.ConfigDict()
-    training.training_iters = 250_000
-    training.checkpoint_freq = 5_000
-    training.eval_freq = 5_000
-    training.snapshot_freq = 10_000
+    training.training_iters = 450_000
+    training.checkpoint_freq = 50_000
+    training.eval_freq = 25_000
+    training.snapshot_freq = 25_000
     training.snapshot_batch_size = 100
     training.batch_size = 128
 
     training.checkpoints_folder = './ddpm_checkpoints/'
     config.checkpoints_prefix = ''
-    config.checkpoint_path = 'where???decide on your own, dude'
-
     # sde
     sde = config.sde = ml_collections.ConfigDict()
     sde.typename = 'vp-dyn'
     sde.solver = 'ancestral'
+    sde.noise_scheduler = 'cosine'
     sde.N = 1000
-    sde.beta_min = 1e-4
-    sde.beta_max = 2e-2
 
     config.device = 'cuda:0'
     return config
