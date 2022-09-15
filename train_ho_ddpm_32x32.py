@@ -8,6 +8,6 @@ diffusion = DiffusionRunner(config)
 config.checkpoints_prefix = 'improved_ddpm'
 diffusion.train(
     project_name='experimental_ddpm',
-    experiment_name='improved_ddpm'
+    experiment_name='ddpm'
 )
 

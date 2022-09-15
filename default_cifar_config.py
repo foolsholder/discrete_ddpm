@@ -55,7 +55,7 @@ def create_default_cifar_config(resolution: int = 32):
     sde = config.sde = ml_collections.ConfigDict()
     sde.typename = 'vp-dyn'
     sde.solver = 'ancestral'
-    sde.noise_scheduler = 'cosine'
+    sde.noise_scheduler = 'linear'
     sde.N = 1000
 
     config.device = 'cuda:0'

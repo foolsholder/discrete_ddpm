@@ -56,8 +56,11 @@ class VariancePreserving:
         self.sqrt_betas = torch.sqrt(self.betas)
 
         self.alphas = 1. - self.betas
+
         self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)
+
         self.alphas_cumprod_prev = torch.cat([torch.FloatTensor([1.0]), self.alphas_cumprod[:-1]])
+
         self.alphas_cumprod_next = torch.cat([self.alphas_cumprod[1:], torch.FloatTensor([0.0])])
 
         self.sqrt_alphas = torch.sqrt(self.alphas)
@@ -67,8 +70,9 @@ class VariancePreserving:
         self.sqrt_1m_alphas_cumprod = torch.sqrt(1. - self.alphas_cumprod)
 
         self.sqrt_alphas_cumprod_prev = torch.sqrt(self.alphas_cumprod_prev)
+
         self.posterior_mean_coef_x_0 = self.betas * self.sqrt_alphas_cumprod_prev / self.one_m_alphas_cumprod
-        self.posterior_mean_coef_x_t = self.sqrt_alphas * (1 - self.alphas_cumprod_prev) * self.sqrt_alphas / self.one_m_alphas_cumprod
+        self.posterior_mean_coef_x_t = self.sqrt_alphas * (1 - self.alphas_cumprod_prev) / self.one_m_alphas_cumprod
 
         self.posterior_std = torch.sqrt(
             self.betas * (1 - self.alphas_cumprod_prev) / (1 - self.alphas_cumprod)
@@ -119,7 +123,7 @@ class VariancePreserving:
 
     def predict_x0(self, x_t, t: torch.LongTensor, eps_theta=None, model=None):
         std = self.marginal_std(t)
-        coef = _extract_tensor_with_time(self.alphas_cumprod, t)
+        coef = _extract_tensor_with_time(self.sqrt_alphas_cumprod, t)
         if eps_theta is None:
             eps_theta = self.calc_score(model, x_t, t)['eps_theta']
         x_0 = (x_t - eps_theta * std) / coef
