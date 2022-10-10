@@ -27,13 +27,8 @@ def parse_args():
 args = parse_args()
 
 
-config = create_default_cifar_config(resolution=32, pp=True)
-
-config.sde.typename = 'vp-sde'
-config.sde.solver = 'euler'
+config = create_default_cifar_config(resolution=32)
 config.checkpoints_prefix = ''
-
-
 config.device = args.device
 
 gen = DiffusionRunner(config, eval=True)
